@@ -157,6 +157,7 @@ export function InteractiveTravelMap({
     if (!mapData || !mapElementRef.current) return;
 
     let isMounted = true;
+    const activeMapData = mapData;
 
     async function renderMap() {
       try {
@@ -172,14 +173,17 @@ export function InteractiveTravelMap({
 
         const map = leafletMapRef.current;
         map.eachLayer((layer) => map.removeLayer(layer));
-        map.setView([mapData.center.latitude, mapData.center.longitude], 12);
+        map.setView(
+          [activeMapData.center.latitude, activeMapData.center.longitude],
+          12,
+        );
 
         window.L.tileLayer(selectedMapView.url, {
           attribution: selectedMapView.attribution,
           maxZoom: 19,
         }).addTo(map);
 
-        mapData.markers.forEach((marker) => {
+        activeMapData.markers.forEach((marker) => {
           const icon = window.L?.divIcon({
             className: "travel-bud-map-marker",
             html: `<span style="background:${marker.color}"></span>`,
