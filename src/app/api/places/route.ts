@@ -21,10 +21,20 @@ type NominatimPlace = {
   };
 };
 
-const allowedClasses = new Set(["place", "boundary"]);
+const allowedClasses = new Set([
+  "place",
+  "boundary",
+  "tourism",
+  "amenity",
+  "historic",
+  "natural",
+  "leisure",
+]);
 const allowedTypes = new Set([
   "administrative",
   "archipelago",
+  "attraction",
+  "beach",
   "borough",
   "city",
   "continent",
@@ -32,15 +42,26 @@ const allowedTypes = new Set([
   "county",
   "district",
   "hamlet",
+  "heritage",
+  "hotel",
   "island",
   "locality",
+  "memorial",
+  "monument",
+  "museum",
   "municipality",
   "neighbourhood",
+  "park",
+  "place_of_worship",
   "province",
   "region",
+  "restaurant",
+  "ruins",
   "state",
   "suburb",
+  "temple",
   "town",
+  "viewpoint",
   "village",
 ]);
 

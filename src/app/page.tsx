@@ -92,6 +92,14 @@ type MapData = {
   }[];
 };
 
+type DestinationCard = {
+  name: string;
+  region: string;
+  image: string;
+  fallbackImage: string;
+  summary: string;
+};
+
 type ChatMessage = {
   role: "user" | "guide";
   content: string;
@@ -145,24 +153,33 @@ const mapLanguages = [
   { code: "zh", label: "Chinese" },
 ];
 
-const destinationCards = [
+const fallbackDestinationImage =
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=700&q=80";
+
+const destinationCards: DestinationCard[] = [
   {
     name: "Phuket",
     region: "Thailand",
     image:
-      "https://images.unsplash.com/photo-1587469166557-0b6b8c3c0b80?auto=format&fit=crop&w=500&q=80",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Patong%20Beach%20in%20Phuket.jpg?width=700",
+    fallbackImage: fallbackDestinationImage,
+    summary: "Beaches, islands, markets",
   },
   {
     name: "Chennai",
     region: "India",
     image:
-      "https://images.unsplash.com/photo-1583321560554-3d5f0fdd1f74?auto=format&fit=crop&w=500&q=80",
+      "https://commons.wikimedia.org/wiki/Special:FilePath/Marina%20beach%2C%20Chennai.jpg?width=700",
+    fallbackImage: fallbackDestinationImage,
+    summary: "Temples, beaches, food",
   },
   {
     name: "Paris",
     region: "France",
     image:
-      "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=500&q=80",
+      "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=700&q=80",
+    fallbackImage: fallbackDestinationImage,
+    summary: "Museums, cafes, landmarks",
   },
 ];
 
@@ -329,6 +346,18 @@ export default function Home() {
 
   function selectFromPlace(place: PlaceSuggestion) {
     setFromPlace(place.name);
+    setIsFromDropdownOpen(false);
+    setError("");
+  }
+
+  function useSuggestedDestination(card: DestinationCard) {
+    setDestination(`${card.name}, ${card.region}`);
+    setIsDropdownOpen(false);
+    setError("");
+  }
+
+  function useSuggestedStartingPlace(card: DestinationCard) {
+    setFromPlace(`${card.name}, ${card.region}`);
     setIsFromDropdownOpen(false);
     setError("");
   }
@@ -602,29 +631,46 @@ export default function Home() {
 
             <div className="grid gap-3 sm:grid-cols-3">
               {destinationCards.map((card) => (
-                <button
-                  suppressHydrationWarning
+                <article
                   key={`${card.name}-${card.region}`}
-                  type="button"
-                  onClick={() => {
-                    setDestination(`${card.name}, ${card.region}`);
-                    setIsDropdownOpen(false);
-                  }}
                   className="group overflow-hidden rounded-md border border-white/15 bg-white/10 text-left transition hover:-translate-y-0.5 hover:bg-white/15"
                 >
-                  <span
-                    className="block h-20 bg-cover bg-center"
-                    style={{ backgroundImage: `url(${card.image})` }}
+                  <img
+                    src={card.image}
+                    alt={`${card.name}, ${card.region}`}
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.src = card.fallbackImage;
+                    }}
+                    className="h-20 w-full object-cover"
                   />
                   <span className="block px-3 py-2">
                     <span className="block text-sm font-bold text-white">
                       {card.name}
                     </span>
                     <span className="block text-xs text-[#d9eef6]">
-                      {card.region}
+                      {card.region} · {card.summary}
+                    </span>
+                    <span className="mt-2 grid grid-cols-2 gap-2">
+                      <button
+                        suppressHydrationWarning
+                        type="button"
+                        onClick={() => useSuggestedStartingPlace(card)}
+                        className="rounded bg-white/10 px-2 py-1 text-[11px] font-bold text-white transition hover:bg-white/20"
+                      >
+                        Start
+                      </button>
+                      <button
+                        suppressHydrationWarning
+                        type="button"
+                        onClick={() => useSuggestedDestination(card)}
+                        className="rounded bg-white px-2 py-1 text-[11px] font-bold text-[#12343b] transition hover:bg-[#d9eef6]"
+                      >
+                        Destination
+                      </button>
                     </span>
                   </span>
-                </button>
+                </article>
               ))}
             </div>
           </div>
@@ -1033,6 +1079,15 @@ export default function Home() {
               onLoadMap={handleMapLookup}
             />
 
+            <AccommodationSuggestions
+              destination={destination}
+              startDate={startDate}
+              endDate={endDate}
+              mapData={mapData}
+              onLoadMap={handleMapLookup}
+              isMapLoading={isMapLoading}
+            />
+
             <section
               id="travel-plan-export"
               className="mt-6 rounded-lg border border-[#d9e2ec] bg-[#f9fbfd] p-4"
@@ -1076,27 +1131,38 @@ export default function Home() {
                     {travelPlan.dailyPlan.map((day) => (
                       <article
                         key={day.day}
-                        className="rounded-md border border-[#d9e2ec] bg-white p-4"
+                        className="overflow-hidden rounded-md border border-[#d9e2ec] bg-white"
                       >
-                        <h3 className="font-bold text-[#111827]">
-                          Day {day.day}: {day.title}
-                        </h3>
-                        <PlanList
-                          title="Morning"
-                          items={day.morningActivities}
+                        <img
+                          src={getDestinationImage(destination)}
+                          alt={`${destination || "Travel"} plan image`}
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.src = fallbackDestinationImage;
+                          }}
+                          className="h-44 w-full object-cover"
                         />
-                        <PlanList
-                          title="Afternoon"
-                          items={day.afternoonActivities}
-                        />
-                        <PlanList
-                          title="Evening"
-                          items={day.eveningActivities}
-                        />
-                        <p className="mt-3 rounded-md bg-[#f9fbfd] px-3 py-2 leading-6">
-                          <strong>Estimated daily budget:</strong>{" "}
-                          {day.estimatedDailyBudget}
-                        </p>
+                        <div className="p-4">
+                          <h3 className="font-bold text-[#111827]">
+                            Day {day.day}: {day.title}
+                          </h3>
+                          <PlanList
+                            title="Morning"
+                            items={day.morningActivities}
+                          />
+                          <PlanList
+                            title="Afternoon"
+                            items={day.afternoonActivities}
+                          />
+                          <PlanList
+                            title="Evening"
+                            items={day.eveningActivities}
+                          />
+                          <p className="mt-3 rounded-md bg-[#f9fbfd] px-3 py-2 leading-6">
+                            <strong>Estimated daily budget:</strong>{" "}
+                            {day.estimatedDailyBudget}
+                          </p>
+                        </div>
                       </article>
                     ))}
                   </div>
@@ -1254,12 +1320,172 @@ export default function Home() {
   );
 }
 
+function AccommodationSuggestions({
+  destination,
+  startDate,
+  endDate,
+  mapData,
+  onLoadMap,
+  isMapLoading,
+}: {
+  destination: string;
+  startDate: string;
+  endDate: string;
+  mapData: MapData | null;
+  onLoadMap: () => void;
+  isMapLoading: boolean;
+}) {
+  const hotels =
+    mapData?.markers
+      .filter((marker) => marker.category.toLowerCase().includes("hotel"))
+      .slice(0, 6) ?? [];
+
+  return (
+    <section className="mt-6 rounded-lg border border-[#d9e2ec] bg-white p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0f8b8d]">
+            Stay suggestions
+          </p>
+          <h3 className="mt-2 text-lg font-bold text-[#111827]">
+            Nearby accommodation options
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-[#64748b]">
+            Suggested stays are planning leads from map data. Always verify
+            price, reviews, cancellation rules, and availability before booking.
+          </p>
+        </div>
+        {!mapData && (
+          <button
+            suppressHydrationWarning
+            type="button"
+            onClick={onLoadMap}
+            disabled={isMapLoading || !destination.trim()}
+            className="h-11 rounded-md bg-[#12343b] px-4 text-sm font-bold text-white transition hover:bg-[#1f4a53] disabled:cursor-not-allowed disabled:bg-[#5b7480]"
+          >
+            {isMapLoading ? "Loading stays..." : "Find Stays"}
+          </button>
+        )}
+      </div>
+
+      {!destination.trim() ? (
+        <p className="mt-4 rounded-md border border-dashed border-[#cfd9e5] bg-[#f9fbfd] p-4 text-sm leading-6 text-[#64748b]">
+          Select a destination to view nearby hotels and booking search
+          shortcuts.
+        </p>
+      ) : hotels.length === 0 ? (
+        <div className="mt-4 rounded-md border border-dashed border-[#cfd9e5] bg-[#f9fbfd] p-4 text-sm leading-6 text-[#64748b]">
+          Load the map to find nearby hotel markers. If no hotel markers appear,
+          use the booking searches below to compare stays near {destination}.
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {hotels.map((hotel) => (
+            <article
+              key={hotel.id}
+              className="rounded-md border border-[#d9e2ec] bg-[#f9fbfd] p-4"
+            >
+              <h4 className="font-bold text-[#111827]">{hotel.name}</h4>
+              <p className="mt-2 text-sm leading-6 text-[#475569]">
+                {hotel.description}
+              </p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#64748b]">
+                {hotel.visitDuration}
+              </p>
+              <BookingLinks
+                destination={`${hotel.name}, ${destination}`}
+                startDate={startDate}
+                endDate={endDate}
+              />
+            </article>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 rounded-md border border-[#d9e2ec] bg-[#f9fbfd] p-4">
+        <h4 className="font-bold text-[#111827]">
+          Compare stays near {destination || "your destination"}
+        </h4>
+        <BookingLinks
+          destination={destination}
+          startDate={startDate}
+          endDate={endDate}
+        />
+      </div>
+    </section>
+  );
+}
+
+function BookingLinks({
+  destination,
+  startDate,
+  endDate,
+}: {
+  destination: string;
+  startDate: string;
+  endDate: string;
+}) {
+  const links = buildBookingLinks(destination, startDate, endDate);
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {links.map((link) => (
+        <a
+          key={link.label}
+          href={link.href}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-md border border-[#cfd9e5] bg-white px-3 py-2 text-xs font-bold text-[#12343b] transition hover:border-[#0f8b8d] hover:text-[#0f8b8d]"
+        >
+          {link.label}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function buildBookingLinks(destination: string, startDate: string, endDate: string) {
+  const query = encodeURIComponent(destination || "hotels");
+  const bookingDates =
+    startDate && endDate ? `&checkin=${startDate}&checkout=${endDate}` : "";
+  const agodaDates =
+    startDate && endDate ? `&checkIn=${startDate}&checkOut=${endDate}` : "";
+
+  return [
+    {
+      label: "Booking.com",
+      href: `https://www.booking.com/searchresults.html?ss=${query}${bookingDates}`,
+    },
+    {
+      label: "Agoda",
+      href: `https://www.agoda.com/search?textToSearch=${query}${agodaDates}`,
+    },
+    {
+      label: "Expedia",
+      href: `https://www.expedia.com/Hotel-Search?destination=${query}`,
+    },
+    {
+      label: "Google Hotels",
+      href: `https://www.google.com/travel/hotels?q=${query}`,
+    },
+  ];
+}
+
 function destinationToSuggestion(place: Destination): PlaceSuggestion {
   return {
     id: `${place.city}-${place.country}`,
     name: `${place.city}, ${place.country}`,
     description: place.highlight,
   };
+}
+
+function getDestinationImage(destination: string) {
+  const searchValue = destination.toLowerCase();
+  const matchedCard = destinationCards.find((card) =>
+    searchValue.includes(card.name.toLowerCase()),
+  );
+
+  return matchedCard?.image ?? fallbackDestinationImage;
 }
 
 function calculateTripDays(startDate: string, endDate: string) {
