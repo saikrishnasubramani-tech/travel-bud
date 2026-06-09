@@ -28,6 +28,7 @@ const travelPlanSchema = {
   required: [
     "dailyPlan",
     "foodRecommendations",
+    "routeOptions",
     "transportationRecommendations",
     "travelTips",
     "hiddenGems",
@@ -83,6 +84,55 @@ const travelPlanSchema = {
       type: "array",
       description: "Food recommendations, local dishes, and meal-planning notes.",
       items: { type: "string" },
+    },
+    routeOptions: {
+      type: "array",
+      description:
+        "Practical ways to reach the destination from the starting place, comparing flight, train, bus, and local transfer options when relevant. Avoid live timings, fares, and availability.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "mode",
+          "summary",
+          "bestFor",
+          "howToCheck",
+          "bookingSource",
+          "cautions",
+        ],
+        properties: {
+          mode: {
+            type: "string",
+            description:
+              "Transport mode such as Flight, Train, Government bus, Private bus, Car, Ferry, or Local transfer.",
+          },
+          summary: {
+            type: "string",
+            description:
+              "Route idea from the starting place to the destination. Include likely nearby airports, railway stations, bus terminals, or transfer points when broadly reliable.",
+          },
+          bestFor: {
+            type: "string",
+            description:
+              "Who this option suits, such as cheapest, fastest, comfortable, family-friendly, senior-friendly, or scenic.",
+          },
+          howToCheck: {
+            type: "string",
+            description:
+              "What the user should search or verify on official transport sites/apps.",
+          },
+          bookingSource: {
+            type: "string",
+            description:
+              "Official or practical booking source category such as airline site, IRCTC, state transport website, official airport site, or trusted travel app. Avoid fake direct links.",
+          },
+          cautions: {
+            type: "string",
+            description:
+              "Important caution such as verify current schedules, cancellation rules, baggage limits, visa/transit requirements, or local transfer timing.",
+          },
+        },
+      },
     },
     transportationRecommendations: {
       type: "array",
@@ -278,6 +328,63 @@ function buildFallbackTravelPlan({
       "Try well-reviewed local restaurants near busy areas rather than empty tourist-focused places.",
       "Ask your stay host or hotel desk for current neighborhood food suggestions.",
       "Keep bottled water, light snacks, and one flexible meal slot each day.",
+    ],
+    routeOptions: [
+      {
+        mode: "Flight",
+        summary: fromPlace
+          ? `Compare flights from the nearest practical airport around ${fromPlace} to the nearest airport serving ${destination}, then plan the final local transfer.`
+          : `Compare flights to the nearest airport serving ${destination}, then plan the final local transfer.`,
+        bestFor: "Fastest option for long-distance or international trips.",
+        howToCheck:
+          "Search official airline sites and trusted flight comparison apps using your exact travel dates.",
+        bookingSource:
+          "Airline websites, official airport websites, and trusted flight comparison apps.",
+        cautions:
+          "Verify baggage rules, layovers, visa or transit requirements, cancellation rules, and airport transfer time before booking.",
+      },
+      {
+        mode: "Train",
+        summary: fromPlace
+          ? `Check whether a direct or connecting train route is practical from ${fromPlace} or its nearest major railway station to ${destination} or its nearest major railway station.`
+          : `Check direct or connecting trains to the nearest major railway station for ${destination}.`,
+        bestFor:
+          "Budget travel, overnight journeys, scenic routes, and travelers carrying more luggage.",
+        howToCheck:
+          "Search by source station, destination station, and dates on the official railway booking system for the country.",
+        bookingSource:
+          "Official railway booking portals such as IRCTC in India, national rail websites, and authorized station counters.",
+        cautions:
+          "Train names, numbers, seat availability, and timings change often, so verify on the official railway portal before booking.",
+      },
+      {
+        mode: "Government bus",
+        summary: fromPlace
+          ? `Check state or government bus services from ${fromPlace} or the nearest district bus stand toward ${destination} or the nearest major city.`
+          : `Check state or government bus services to ${destination} or the nearest major city.`,
+        bestFor:
+          "Affordable travel, short and medium-distance trips, and routes where trains are limited.",
+        howToCheck:
+          "Search the official state transport website or bus stand counter for your exact route and dates.",
+        bookingSource:
+          "Official state transport corporation websites, government bus counters, and trusted authorized apps.",
+        cautions:
+          "Government bus routes can be split across districts or states, so verify boarding point, drop point, service type, and luggage rules.",
+      },
+      {
+        mode: "Private bus or car",
+        summary: fromPlace
+          ? `If public transport is limited, compare private buses, shared cabs, rental cars, or taxis from ${fromPlace} to ${destination}.`
+          : `If public transport is limited, compare private buses, shared cabs, rental cars, or taxis to ${destination}.`,
+        bestFor:
+          "Flexible timing, family groups, rural starts, late arrivals, or places with weak rail connectivity.",
+        howToCheck:
+          "Compare licensed operators, recent reviews, pickup points, and cancellation rules before paying.",
+        bookingSource:
+          "Trusted bus apps, licensed taxi operators, hotel-arranged transfers, and official rental providers.",
+        cautions:
+          "Avoid unclear pricing, unlicensed operators, and unsafe night travel on unfamiliar routes.",
+      },
     ],
     transportationRecommendations: [
       fromPlace
@@ -496,6 +603,9 @@ export async function POST(request: NextRequest) {
                         "Return only the JSON object matching the provided schema.",
                         "Create a practical trip plan based only on the supplied destination, travel dates when present, days, budget, and interests.",
                         "If fromPlace is provided, include practical route planning considerations from the starting place to the destination. Do not invent live flight prices, train availability, or exact fares.",
+                        "Populate routeOptions with clear ways to reach the destination from fromPlace. Compare flight, train, government bus, private bus, car, ferry, and local transfer options only where relevant.",
+                        "For train and government bus ideas, shortlist route search ideas such as likely source station, destination station, nearest major junction, state transport corporation, or route corridor when broadly reliable. Do not invent exact train numbers, bus numbers, live schedules, seat availability, or fares.",
+                        "For India routes, mention official sources such as IRCTC for trains and relevant state transport corporation websites for government buses when applicable. For other countries, mention the equivalent official railway, bus, airline, or airport sources when broadly known.",
                         "If travel dates are provided, align the day-wise plan with that travel window. Do not invent date-specific festivals, closures, live events, or seasonal facts unless they are commonly known and stable.",
                         "Include day-wise itinerary, morning activities, afternoon activities, evening activities, estimated daily budget, food recommendations, transportation recommendations, travel tips, and budget summary.",
                         "Also include hidden gems, tourist scams to avoid, local customs, safety advice, emergency information, and best local foods for the destination.",

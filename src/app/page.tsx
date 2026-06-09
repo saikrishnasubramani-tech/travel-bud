@@ -21,6 +21,14 @@ type TravelPlan = {
     estimatedDailyBudget: string;
   }[];
   foodRecommendations: string[];
+  routeOptions?: {
+    mode: string;
+    summary: string;
+    bestFor: string;
+    howToCheck: string;
+    bookingSource: string;
+    cautions: string;
+  }[];
   transportationRecommendations: string[];
   travelTips: string[];
   hiddenGems: string[];
@@ -594,39 +602,32 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#f6f8fb] text-[#111827]">
-      <section className="mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 gap-8 px-5 py-6 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-10 lg:py-10">
-        <div className="relative flex min-h-[430px] overflow-hidden rounded-lg bg-[#12343b] p-8 text-white sm:p-10 lg:min-h-full">
+      <section className="mx-auto grid min-h-screen w-full max-w-7xl grid-cols-1 gap-8 px-5 py-6 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:px-10 lg:py-10">
+        <div className="relative flex min-h-[430px] overflow-hidden rounded-lg bg-[#12343b] p-8 text-white sm:p-10 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)]">
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(18,52,59,0.96),rgba(18,52,59,0.58)),url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
 
-          <div className="relative z-10 flex max-w-xl flex-col justify-between gap-10">
+          <div className="relative z-10 flex max-w-xl flex-col justify-between gap-6">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#7dd3fc]">
                 Smart itinerary builder
               </p>
-              <h1 className="mt-5 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
-                Travel Bud
-              </h1>
+              <div className="mt-5 flex items-center gap-4">
+                <div
+                  className="travel-bud-globe relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-white/30 bg-[radial-gradient(circle_at_30%_25%,#ffffff_0,#7dd3fc_14%,#0f8b8d_34%,#12343b_72%)] shadow-[0_18px_45px_rgba(0,0,0,0.28)] before:absolute before:inset-2 before:rounded-full before:border before:border-white/30 before:content-[''] after:absolute after:left-[-20%] after:top-[47%] after:h-1 after:w-[140%] after:rounded-full after:bg-white/35 after:content-['']"
+                  aria-hidden="true"
+                >
+                  <span className="absolute left-5 top-2 h-12 w-5 rounded-full border-x border-white/35" />
+                  <span className="absolute left-2 top-5 h-5 w-12 rounded-full border-y border-white/35" />
+                  <span className="absolute right-3 top-3 h-3 w-3 rounded-full bg-[#f97316]" />
+                </div>
+                <h1 className="text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
+                  Travel Bud
+                </h1>
+              </div>
               <p className="mt-5 max-w-lg text-base leading-7 text-[#eef7fb] sm:text-lg">
                 Search global destinations, choose your currency, and generate
                 a complete trip plan for your travel style.
               </p>
-            </div>
-
-            <div className="grid gap-3 text-sm text-[#d9eef6] sm:grid-cols-3">
-              <div>
-                <span className="block text-2xl font-bold text-white">
-                  Worldwide
-                </span>
-                Destinations
-              </div>
-              <div>
-                <span className="block text-2xl font-bold text-white">150+</span>
-                Currencies
-              </div>
-              <div>
-                <span className="block text-2xl font-bold text-white">24/7</span>
-                Planner
-              </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
@@ -649,7 +650,7 @@ export default function Home() {
                       {card.name}
                     </span>
                     <span className="block text-xs text-[#d9eef6]">
-                      {card.region} · {card.summary}
+                      {card.region} - {card.summary}
                     </span>
                     <span className="mt-2 grid grid-cols-2 gap-2">
                       <button
@@ -672,6 +673,23 @@ export default function Home() {
                   </span>
                 </article>
               ))}
+            </div>
+
+            <div className="grid gap-3 text-sm text-[#d9eef6] sm:grid-cols-3">
+              <div>
+                <span className="block text-2xl font-bold text-white">
+                  Worldwide
+                </span>
+                Destinations
+              </div>
+              <div>
+                <span className="block text-2xl font-bold text-white">150+</span>
+                Currencies
+              </div>
+              <div>
+                <span className="block text-2xl font-bold text-white">24/7</span>
+                Planner
+              </div>
             </div>
           </div>
         </div>
@@ -1167,6 +1185,12 @@ export default function Home() {
                     ))}
                   </div>
 
+                  <RouteOptions
+                    fromPlace={fromPlace}
+                    destination={destination}
+                    routeOptions={travelPlan.routeOptions ?? []}
+                  />
+
                   <div className="grid gap-4 md:grid-cols-2">
                     <InfoList
                       title="Food recommendations"
@@ -1514,6 +1538,72 @@ function PlanList({ title, items }: { title: string; items: string[] }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+function RouteOptions({
+  fromPlace,
+  destination,
+  routeOptions,
+}: {
+  fromPlace: string;
+  destination: string;
+  routeOptions: NonNullable<TravelPlan["routeOptions"]>;
+}) {
+  if (routeOptions.length === 0) {
+    return null;
+  }
+
+  return (
+    <article className="rounded-md border border-[#d9e2ec] bg-white p-4">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0f8b8d]">
+            How to reach
+          </p>
+          <h3 className="mt-1 font-bold text-[#111827]">
+            {fromPlace ? `${fromPlace} to ${destination}` : `Getting to ${destination}`}
+          </h3>
+        </div>
+        <p className="text-xs font-semibold text-[#64748b]">
+          Verify live timings, fares, and seats before booking.
+        </p>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {routeOptions.map((option) => (
+          <section
+            key={`${option.mode}-${option.summary}`}
+            className="rounded-md border border-[#d9e2ec] bg-[#f9fbfd] p-4"
+          >
+            <h4 className="font-bold text-[#111827]">{option.mode}</h4>
+            <p className="mt-2 text-sm leading-6 text-[#334155]">
+              {option.summary}
+            </p>
+            <dl className="mt-3 grid gap-2 text-sm leading-6 text-[#475569]">
+              <div>
+                <dt className="inline font-bold text-[#111827]">Best for: </dt>
+                <dd className="inline">{option.bestFor}</dd>
+              </div>
+              <div>
+                <dt className="inline font-bold text-[#111827]">Check: </dt>
+                <dd className="inline">{option.howToCheck}</dd>
+              </div>
+              <div>
+                <dt className="inline font-bold text-[#111827]">
+                  Booking source:{" "}
+                </dt>
+                <dd className="inline">{option.bookingSource}</dd>
+              </div>
+              <div>
+                <dt className="inline font-bold text-[#111827]">Caution: </dt>
+                <dd className="inline">{option.cautions}</dd>
+              </div>
+            </dl>
+          </section>
+        ))}
+      </div>
+    </article>
   );
 }
 

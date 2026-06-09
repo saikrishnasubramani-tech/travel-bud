@@ -45,6 +45,50 @@ textarea {
   }
 }
 
+.travel-bud-globe {
+  animation: globe-float 4.5s ease-in-out infinite;
+}
+
+.travel-bud-globe span:first-child {
+  animation: globe-meridian 6s linear infinite;
+}
+
+.travel-bud-globe span:nth-child(2) {
+  animation: globe-latitude 5s ease-in-out infinite;
+}
+
+@keyframes globe-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+
+  50% {
+    transform: translateY(-5px) rotate(4deg);
+  }
+}
+
+@keyframes globe-meridian {
+  from {
+    transform: translateX(-3px) rotateY(0deg);
+  }
+
+  to {
+    transform: translateX(3px) rotateY(360deg);
+  }
+}
+
+@keyframes globe-latitude {
+  0%,
+  100% {
+    transform: rotate(-8deg) scaleX(0.92);
+  }
+
+  50% {
+    transform: rotate(8deg) scaleX(1.05);
+  }
+}
+
 .travel-bud-map-marker {
   background: transparent;
   border: 0;
