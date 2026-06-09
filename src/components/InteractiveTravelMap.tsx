@@ -65,6 +65,7 @@ type LeafletGlobal = {
     options: {
       attribution: string;
       maxZoom: number;
+      maxNativeZoom?: number;
     },
   ) => LeafletLayer;
 };
@@ -82,24 +83,32 @@ const mapViews = [
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
     attribution:
       "Tiles &copy; Esri, HERE, Garmin, OpenStreetMap contributors",
+    maxZoom: 20,
+    maxNativeZoom: 18,
   },
   {
     id: "light",
     label: "Light",
     url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    maxZoom: 20,
+    maxNativeZoom: 20,
   },
   {
     id: "terrain",
     label: "Terrain",
     url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
     attribution: '&copy; OpenStreetMap contributors, SRTM, OpenTopoMap',
+    maxZoom: 20,
+    maxNativeZoom: 17,
   },
   {
     id: "satellite",
     label: "Satellite",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution: "Tiles &copy; Esri",
+    maxZoom: 20,
+    maxNativeZoom: 18,
   },
 ];
 
@@ -180,7 +189,8 @@ export function InteractiveTravelMap({
 
         window.L.tileLayer(selectedMapView.url, {
           attribution: selectedMapView.attribution,
-          maxZoom: 19,
+          maxZoom: selectedMapView.maxZoom,
+          maxNativeZoom: selectedMapView.maxNativeZoom,
         }).addTo(map);
 
         activeMapData.markers.forEach((marker) => {
