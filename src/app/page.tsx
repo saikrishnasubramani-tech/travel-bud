@@ -204,6 +204,9 @@ export default function Home() {
   const [days, setDays] = useState("5");
   const [budget, setBudget] = useState("40000");
   const [currency, setCurrency] = useState("INR - Indian Rupee");
+  const [adultTravellers, setAdultTravellers] = useState(2);
+  const [childTravellers, setChildTravellers] = useState(0);
+  const [infantTravellers, setInfantTravellers] = useState(0);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([
     "Food",
     "Culture",
@@ -443,6 +446,11 @@ export default function Home() {
           endDate: endDate || undefined,
           days: tripDays,
           budget: `${currency} ${Number(budget).toLocaleString()}`,
+          travelers: {
+            adults: adultTravellers,
+            children: childTravellers,
+            infants: infantTravellers,
+          },
           interests: selectedInterests,
         }),
       });
@@ -887,6 +895,45 @@ export default function Home() {
                 </div>
               </div>
 
+              <div className="grid gap-3 rounded-md border border-[#d9e2ec] bg-[#f9fbfd] p-4">
+                <div>
+                  <p className="text-sm font-semibold text-[#111827]">
+                    Number of travellers
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[#64748b]">
+                    Used to adjust pace, transport, stay type, safety, and
+                    family-friendly planning.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <TravellerCounter
+                    label="Adults"
+                    helper="18+ years"
+                    value={adultTravellers}
+                    min={1}
+                    max={20}
+                    onChange={setAdultTravellers}
+                  />
+                  <TravellerCounter
+                    label="Children"
+                    helper="3 to 17 years"
+                    value={childTravellers}
+                    min={0}
+                    max={20}
+                    onChange={setChildTravellers}
+                  />
+                  <TravellerCounter
+                    label="Infants"
+                    helper="Below 3 years"
+                    value={infantTravellers}
+                    min={0}
+                    max={10}
+                    onChange={setInfantTravellers}
+                  />
+                </div>
+              </div>
+
               <div className="relative grid gap-2">
                 <label
                   className="text-sm font-semibold"
@@ -1101,6 +1148,11 @@ export default function Home() {
               destination={destination}
               startDate={startDate}
               endDate={endDate}
+              travelers={{
+                adults: adultTravellers,
+                children: childTravellers,
+                infants: infantTravellers,
+              }}
               mapData={mapData}
               onLoadMap={handleMapLookup}
               isMapLoading={isMapLoading}
@@ -1120,6 +1172,12 @@ export default function Home() {
                 <p className="mt-2 text-sm text-[#475569]">
                   Trip plan from {fromPlace || "your starting place"} to{" "}
                   {destination || "your destination"}
+                </p>
+                <p className="mt-1 text-sm text-[#475569]">
+                  Travellers: {adultTravellers} adult
+                  {adultTravellers === 1 ? "" : "s"}, {childTravellers} child
+                  {childTravellers === 1 ? "" : "ren"}, {infantTravellers} infant
+                  {infantTravellers === 1 ? "" : "s"}
                 </p>
               </div>
 
@@ -1344,10 +1402,64 @@ export default function Home() {
   );
 }
 
+function TravellerCounter({
+  label,
+  helper,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  helper: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  function updateValue(nextValue: number) {
+    onChange(Math.min(max, Math.max(min, nextValue)));
+  }
+
+  return (
+    <div className="rounded-md border border-[#d9e2ec] bg-white p-3">
+      <div>
+        <p className="text-sm font-bold text-[#111827]">{label}</p>
+        <p className="text-xs text-[#64748b]">{helper}</p>
+      </div>
+
+      <div className="mt-3 flex h-11 items-center justify-between rounded-md border border-[#cfd9e5] bg-[#f9fbfd] px-2">
+        <button
+          suppressHydrationWarning
+          type="button"
+          onClick={() => updateValue(value - 1)}
+          disabled={value <= min}
+          aria-label={`Decrease ${label}`}
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-lg font-bold text-[#12343b] shadow-sm transition hover:bg-[#eefafa] disabled:cursor-not-allowed disabled:text-[#94a3b8]"
+        >
+          -
+        </button>
+        <span className="text-lg font-bold text-[#111827]">{value}</span>
+        <button
+          suppressHydrationWarning
+          type="button"
+          onClick={() => updateValue(value + 1)}
+          disabled={value >= max}
+          aria-label={`Increase ${label}`}
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-lg font-bold text-[#12343b] shadow-sm transition hover:bg-[#eefafa] disabled:cursor-not-allowed disabled:text-[#94a3b8]"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AccommodationSuggestions({
   destination,
   startDate,
   endDate,
+  travelers,
   mapData,
   onLoadMap,
   isMapLoading,
@@ -1355,6 +1467,11 @@ function AccommodationSuggestions({
   destination: string;
   startDate: string;
   endDate: string;
+  travelers: {
+    adults: number;
+    children: number;
+    infants: number;
+  };
   mapData: MapData | null;
   onLoadMap: () => void;
   isMapLoading: boolean;
@@ -1397,6 +1514,13 @@ function AccommodationSuggestions({
           </button>
         )}
       </div>
+
+      {destination.trim() && (
+        <div className="mt-4 rounded-md border border-[#d9e2ec] bg-[#eefafa] p-4 text-sm leading-6 text-[#334155]">
+          <strong className="text-[#111827]">Traveller-aware stay filter:</strong>{" "}
+          {buildTravelerStayAdvice(travelers)}
+        </div>
+      )}
 
       {!destination.trim() ? (
         <p className="mt-4 rounded-md border border-dashed border-[#cfd9e5] bg-[#f9fbfd] p-4 text-sm leading-6 text-[#64748b]">
@@ -1625,6 +1749,37 @@ function buildStaySearchIdeas(destination: string) {
         "Good for honeymoon trips, special occasions, resort stays, and comfort-focused travel.",
     },
   ];
+}
+
+function buildTravelerStayAdvice(travelers: {
+  adults: number;
+  children: number;
+  infants: number;
+}) {
+  const totalTravellers = travelers.adults + travelers.children + travelers.infants;
+  const notes = [
+    `${totalTravellers} traveller${totalTravellers === 1 ? "" : "s"}: ${travelers.adults} adult${travelers.adults === 1 ? "" : "s"}, ${travelers.children} child${travelers.children === 1 ? "" : "ren"}, ${travelers.infants} infant${travelers.infants === 1 ? "" : "s"}.`,
+  ];
+
+  if (travelers.children > 0) {
+    notes.push(
+      "Prioritize family rooms, safe surroundings, breakfast options, easy transport access, and nearby parks or low-effort activities.",
+    );
+  }
+
+  if (travelers.infants > 0) {
+    notes.push(
+      "Prefer lifts, stroller access, quiet rooms, flexible cancellation, nearby pharmacy/clinic, baby cot availability, and shorter transfers.",
+    );
+  }
+
+  if (travelers.children === 0 && travelers.infants === 0) {
+    notes.push(
+      "Compare central, transport-friendly, budget, premium, and local neighborhood stays based on your travel style.",
+    );
+  }
+
+  return notes.join(" ");
 }
 
 function buildBookingLinks(destination: string, startDate: string, endDate: string) {

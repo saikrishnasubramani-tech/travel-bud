@@ -9,6 +9,7 @@ type ItineraryRequest = {
   endDate?: unknown;
   days?: unknown;
   budget?: unknown;
+  travelers?: unknown;
   interests?: unknown;
 };
 
@@ -19,6 +20,11 @@ type ValidatedItineraryRequest = {
   endDate: string;
   days: number;
   budget: string;
+  travelers: {
+    adults: number;
+    children: number;
+    infants: number;
+  };
   interests: string[];
 };
 
@@ -295,8 +301,13 @@ function buildFallbackTravelPlan({
   destination,
   days,
   budget,
+  travelers,
   interests,
 }: ValidatedItineraryRequest) {
+  const hasChildren = travelers.children > 0;
+  const hasInfants = travelers.infants > 0;
+  const travelerSummary = `${travelers.adults} adult${travelers.adults === 1 ? "" : "s"}, ${travelers.children} child${travelers.children === 1 ? "" : "ren"}, ${travelers.infants} infant${travelers.infants === 1 ? "" : "s"}`;
+
   return {
     dailyPlan: Array.from({ length: days }, (_, index) => {
       const day = index + 1;
@@ -311,10 +322,18 @@ function buildFallbackTravelPlan({
         morningActivities: [
           `Start with a central neighborhood walk in ${destination}.`,
           `Choose one nearby attraction connected to ${primaryInterest}.`,
+          hasInfants
+            ? "Keep the first activity short and close to the stay, with feeding, nap, and stroller time."
+            : hasChildren
+              ? "Choose a child-friendly stop with easy walking, shade, restrooms, and low waiting time."
+              : "Use the morning for the highest-priority attraction while energy is fresh.",
         ],
         afternoonActivities: [
           "Plan lunch near the main sightseeing area to reduce travel time.",
           "Visit one museum, market, viewpoint, beach, temple, park, or cultural stop based on your preferences.",
+          hasChildren || hasInfants
+            ? "Add a rest break after lunch and avoid packing too many locations into one afternoon."
+            : "Use the afternoon for a nearby second stop or flexible local exploration.",
         ],
         eveningActivities: [
           "Keep the evening lighter with a food street, waterfront, mall, cultural area, or relaxed local walk.",
@@ -393,11 +412,21 @@ function buildFallbackTravelPlan({
       "Use official taxis, ride-hailing apps, metro, buses, or hotel-arranged transfers where available.",
       "Check airport, railway station, or bus terminal transfer options before arrival.",
       "Group nearby places together to reduce travel time and transport cost.",
+      hasInfants
+        ? "For infants, prefer shorter transfers, private pickup where practical, and avoid late-night travel unless necessary."
+        : hasChildren
+          ? "For children, prefer routes with fewer transfers, reserved seats, and reliable rest stops."
+          : "Match transport choices to comfort, time, and budget.",
     ],
     travelTips: [
       "Verify opening hours, ticket rules, and local holidays before visiting.",
       "Start popular outdoor places early to avoid heat and crowds.",
       "Keep digital and printed copies of important bookings and IDs.",
+      hasInfants
+        ? "Carry infant essentials, medicines, snacks, hydration, and a simple backup plan for skipped activities."
+        : hasChildren
+          ? "Balance sightseeing with child-friendly breaks, snacks, restrooms, and low-effort activities."
+          : "Keep one flexible slot each day for local suggestions or rest.",
     ],
     hiddenGems: [
       "Look for local markets, old neighborhoods, viewpoints, parks, and community food streets near the destination.",
@@ -464,9 +493,11 @@ function buildFallbackTravelPlan({
     budgetSummary: {
       overallEstimate: `Plan within ${budget}, keeping a flexible 10-20% emergency buffer.`,
       transport:
-        "Reserve a clear portion for airport transfers, local transport, and occasional private rides.",
+        `Reserve a clear portion for airport transfers, local transport, and occasional private rides for ${travelerSummary}.`,
       food:
-        "Mix local restaurants, cafes, and simple meals to keep spending balanced.",
+        hasChildren || hasInfants
+          ? "Use family-friendly restaurants, safe snacks, clean drinking water, and simple meal backups for children or infants."
+          : "Mix local restaurants, cafes, and simple meals to keep spending balanced.",
       activities:
         "Keep paid attractions selective and balance them with free viewpoints, markets, beaches, parks, or cultural walks.",
       buffer:
@@ -485,6 +516,7 @@ function validateRequest(body: ItineraryRequest) {
   const endDate = typeof body.endDate === "string" ? body.endDate.trim() : "";
   const days = Number(body.days);
   const budget = typeof body.budget === "string" ? body.budget.trim() : "";
+  const travelers = validateTravelers(body.travelers);
   const interests = Array.isArray(body.interests)
     ? body.interests.filter((item): item is string => typeof item === "string")
     : [];
@@ -530,9 +562,41 @@ function validateRequest(body: ItineraryRequest) {
       endDate,
       days,
       budget,
+      travelers,
       interests,
     },
   };
+}
+
+function validateTravelers(value: unknown) {
+  const source =
+    value && typeof value === "object"
+      ? (value as Record<string, unknown>)
+      : {};
+  const adults = normalizeTravelerCount(source.adults, 1, 20, 1);
+  const children = normalizeTravelerCount(source.children, 0, 20, 0);
+  const infants = normalizeTravelerCount(source.infants, 0, 10, 0);
+
+  return {
+    adults,
+    children,
+    infants,
+  };
+}
+
+function normalizeTravelerCount(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number,
+) {
+  const numericValue = Number(value);
+
+  if (!Number.isInteger(numericValue)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, numericValue));
 }
 
 export async function POST(request: NextRequest) {
@@ -558,7 +622,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validated.error }, { status: 400 });
     }
 
-    const { destination, startDate, endDate, days, budget, interests } =
+    const { destination, startDate, endDate, days, budget, travelers, interests } =
       validated.data;
     fallbackRequest = {
       fromPlace: validated.data.fromPlace,
@@ -567,6 +631,7 @@ export async function POST(request: NextRequest) {
       endDate,
       days,
       budget,
+      travelers,
       interests,
     };
 
@@ -598,10 +663,15 @@ export async function POST(request: NextRequest) {
                           : null,
                       days,
                       budget,
+                      travelers,
                       interests,
                       instructions: [
                         "Return only the JSON object matching the provided schema.",
-                        "Create a practical trip plan based only on the supplied destination, travel dates when present, days, budget, and interests.",
+                        "Create a practical trip plan based only on the supplied destination, travel dates when present, days, budget, travelers, and interests.",
+                        "Use travelers.adults for adults aged 18 years and above, travelers.children for children aged 3 to 17 years, and travelers.infants for infants below 3 years.",
+                        "Adapt itinerary pace, route choices, accommodation recommendations, restaurant choices, safety advice, rest breaks, and daily activity intensity based on the traveler composition.",
+                        "If children are included, prefer child-friendly attractions, reliable transport, shorter queues, clean restrooms, safe food, and rest breaks.",
+                        "If infants are included, prefer stroller-friendly movement, shorter transfers, lift access, quiet stays, nearby pharmacy or clinic access, baby cot availability, feeding breaks, nap windows, and flexible cancellation.",
                         "If fromPlace is provided, include practical route planning considerations from the starting place to the destination. Do not invent live flight prices, train availability, or exact fares.",
                         "Populate routeOptions with clear ways to reach the destination from fromPlace. Compare flight, train, government bus, private bus, car, ferry, and local transfer options only where relevant.",
                         "For train and government bus ideas, shortlist route search ideas such as likely source station, destination station, nearest major junction, state transport corporation, or route corridor when broadly reliable. Do not invent exact train numbers, bus numbers, live schedules, seat availability, or fares.",
