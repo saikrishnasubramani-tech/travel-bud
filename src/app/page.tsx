@@ -1361,8 +1361,13 @@ function AccommodationSuggestions({
 }) {
   const hotels =
     mapData?.markers
-      .filter((marker) => marker.category.toLowerCase().includes("hotel"))
+      .filter(
+        (marker) =>
+          marker.category.toLowerCase().includes("hotel") &&
+          !marker.id.startsWith("fallback-"),
+      )
       .slice(0, 6) ?? [];
+  const staySearchIdeas = buildStaySearchIdeas(destination);
 
   return (
     <section className="mt-6 rounded-lg border border-[#d9e2ec] bg-white p-4">
@@ -1375,8 +1380,9 @@ function AccommodationSuggestions({
             Nearby accommodation options
           </h3>
           <p className="mt-2 text-sm leading-6 text-[#64748b]">
-            Suggested stays are planning leads from map data. Always verify
-            price, reviews, cancellation rules, and availability before booking.
+            Suggested stays are planning leads from map data and stay-area
+            searches. Always verify ratings, price, reviews, cancellation rules,
+            and availability before booking.
           </p>
         </div>
         {!mapData && (
@@ -1399,8 +1405,9 @@ function AccommodationSuggestions({
         </p>
       ) : hotels.length === 0 ? (
         <div className="mt-4 rounded-md border border-dashed border-[#cfd9e5] bg-[#f9fbfd] p-4 text-sm leading-6 text-[#64748b]">
-          Load the map to find nearby hotel markers. If no hotel markers appear,
-          use the booking searches below to compare stays near {destination}.
+          No named hotel markers were found from the free map source for this
+          destination. Use the worldwide stay-search ideas below to compare
+          highly rated stays near {destination}.
         </div>
       ) : (
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -1418,6 +1425,30 @@ function AccommodationSuggestions({
               </p>
               <BookingLinks
                 destination={`${hotel.name}, ${destination}`}
+                startDate={startDate}
+                endDate={endDate}
+              />
+            </article>
+          ))}
+        </div>
+      )}
+
+      {destination.trim() && (
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {staySearchIdeas.map((idea) => (
+            <article
+              key={idea.title}
+              className="rounded-md border border-[#d9e2ec] bg-[#f9fbfd] p-4"
+            >
+              <h4 className="font-bold text-[#111827]">{idea.title}</h4>
+              <p className="mt-2 text-sm leading-6 text-[#475569]">
+                {idea.description}
+              </p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#64748b]">
+                Search and verify top-rated stays
+              </p>
+              <BookingLinks
+                destination={`${idea.query}, ${destination}`}
                 startDate={startDate}
                 endDate={endDate}
               />
@@ -1466,6 +1497,134 @@ function BookingLinks({
       ))}
     </div>
   );
+}
+
+function buildStaySearchIdeas(destination: string) {
+  const normalizedDestination = destination.toLowerCase();
+
+  if (!destination.trim()) {
+    return [];
+  }
+
+  if (normalizedDestination.includes("phuket")) {
+    return [
+      {
+        title: "Patong Beach stays",
+        query: "top rated hotels Patong Beach",
+        description:
+          "Good for nightlife, beach access, shopping, and first-time Phuket visitors who want many hotel choices.",
+      },
+      {
+        title: "Kata and Karon stays",
+        query: "top rated hotels Kata Beach Karon Beach",
+        description:
+          "Good for families, couples, beaches, calmer evenings, and a balanced Phuket trip.",
+      },
+      {
+        title: "Phuket Old Town stays",
+        query: "top rated hotels Phuket Old Town",
+        description:
+          "Good for cafes, local food, heritage streets, markets, and a less beach-focused stay.",
+      },
+      {
+        title: "Bang Tao and Kamala stays",
+        query: "top rated resorts Bang Tao Kamala Phuket",
+        description:
+          "Good for resorts, quieter beach stays, honeymoon trips, and a more relaxed pace.",
+      },
+    ];
+  }
+
+  if (normalizedDestination.includes("chennai")) {
+    return [
+      {
+        title: "T Nagar and Nungambakkam stays",
+        query: "top rated hotels T Nagar Nungambakkam Chennai",
+        description:
+          "Good for shopping, restaurants, central access, and business-friendly stays.",
+      },
+      {
+        title: "Mylapore and Marina stays",
+        query: "top rated hotels Mylapore Marina Beach Chennai",
+        description:
+          "Good for temples, culture, beach walks, and classic Chennai experiences.",
+      },
+      {
+        title: "Egmore and Central station stays",
+        query: "top rated hotels Egmore Chennai Central",
+        description:
+          "Good for train access, short stays, and travelers using public transport.",
+      },
+      {
+        title: "OMR and ECR stays",
+        query: "top rated hotels OMR ECR Chennai",
+        description:
+          "Good for IT corridor, beach resorts, family trips, and road access toward Mahabalipuram.",
+      },
+    ];
+  }
+
+  if (normalizedDestination.includes("paris")) {
+    return [
+      {
+        title: "Central Paris stays",
+        query: "top rated hotels central Paris",
+        description:
+          "Good for first-time visitors who want easy access to museums, cafes, and major sights.",
+      },
+      {
+        title: "Left Bank stays",
+        query: "top rated hotels Latin Quarter Saint Germain Paris",
+        description:
+          "Good for culture, cafes, bookshops, walkability, and classic Paris neighborhoods.",
+      },
+      {
+        title: "Eiffel Tower area stays",
+        query: "top rated hotels near Eiffel Tower Paris",
+        description:
+          "Good for landmark views, family trips, and travelers who prefer a recognizable base.",
+      },
+    ];
+  }
+
+  return [
+    {
+      title: "Central stay options",
+      query: `top rated hotels central ${destination}`,
+      description:
+        "Good for first-time visitors, walkability, food access, and easier local transport.",
+    },
+    {
+      title: "Transport-friendly stays",
+      query: `top rated hotels near railway station bus stand airport ${destination}`,
+      description:
+        "Good for travelers arriving by train, bus, or flight who want easier pickup, drop, and onward travel.",
+    },
+    {
+      title: "Local neighborhood stays",
+      query: `best hotels local neighborhood ${destination}`,
+      description:
+        "Good for travelers who prefer local food, markets, temples, culture, and less tourist-heavy areas.",
+    },
+    {
+      title: "Family-friendly stays",
+      query: `top rated family friendly hotels ${destination}`,
+      description:
+        "Good for families, children, quieter surroundings, and practical room facilities.",
+    },
+    {
+      title: "Budget-friendly stays",
+      query: `best budget hotels ${destination}`,
+      description:
+        "Good for affordable trips, short stays, and travelers who want to save more for activities.",
+    },
+    {
+      title: "Premium and honeymoon stays",
+      query: `top rated luxury resorts hotels ${destination}`,
+      description:
+        "Good for honeymoon trips, special occasions, resort stays, and comfort-focused travel.",
+    },
+  ];
 }
 
 function buildBookingLinks(destination: string, startDate: string, endDate: string) {

@@ -89,7 +89,17 @@ function buildFallbackMarkers(
 function getCategory(tags: Record<string, string>): MapCategory | null {
   if (tags.amenity === "restaurant" || tags.cuisine) return "Restaurant";
   if (tags.amenity === "cafe" || tags.amenity === "food_court") return "Restaurant";
-  if (tags.tourism === "hotel" || tags.tourism === "guest_house") return "Hotel";
+  if (
+    tags.tourism === "hotel" ||
+    tags.tourism === "guest_house" ||
+    tags.tourism === "hostel" ||
+    tags.tourism === "motel" ||
+    tags.tourism === "resort" ||
+    tags.tourism === "apartment" ||
+    tags.tourism === "chalet"
+  ) {
+    return "Hotel";
+  }
   if (
     tags.railway === "station" ||
     tags.amenity === "bus_station" ||
@@ -243,13 +253,19 @@ export async function GET(request: NextRequest) {
     const latitude = Number(place.lat);
     const longitude = Number(place.lon);
     const searchRadiusMeters = 9000;
+    const accommodationRadiusMeters = 26000;
 
     const query = `
       [out:json][timeout:12];
       (
-        node(around:${searchRadiusMeters},${latitude},${longitude})["tourism"~"attraction|museum|gallery|viewpoint|hotel|guest_house"];
-        way(around:${searchRadiusMeters},${latitude},${longitude})["tourism"~"attraction|museum|gallery|viewpoint|hotel|guest_house"];
+        node(around:${searchRadiusMeters},${latitude},${longitude})["tourism"~"attraction|museum|gallery|viewpoint"];
+        way(around:${searchRadiusMeters},${latitude},${longitude})["tourism"~"attraction|museum|gallery|viewpoint"];
+        relation(around:${searchRadiusMeters},${latitude},${longitude})["tourism"~"attraction|museum|gallery|viewpoint"];
+        node(around:${accommodationRadiusMeters},${latitude},${longitude})["tourism"~"hotel|guest_house|hostel|motel|resort|apartment|chalet"];
+        way(around:${accommodationRadiusMeters},${latitude},${longitude})["tourism"~"hotel|guest_house|hostel|motel|resort|apartment|chalet"];
+        relation(around:${accommodationRadiusMeters},${latitude},${longitude})["tourism"~"hotel|guest_house|hostel|motel|resort|apartment|chalet"];
         node(around:${searchRadiusMeters},${latitude},${longitude})["historic"];
+        way(around:${searchRadiusMeters},${latitude},${longitude})["historic"];
         node(around:${searchRadiusMeters},${latitude},${longitude})["amenity"="restaurant"];
         node(around:${searchRadiusMeters},${latitude},${longitude})["amenity"="cafe"];
         node(around:${searchRadiusMeters},${latitude},${longitude})["amenity"="food_court"];
