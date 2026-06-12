@@ -147,8 +147,12 @@ export async function GET(request: NextRequest) {
 
     const data = (await response.json()) as NominatimPlace[];
     const seenPlaces = new Set<string>();
-    const places = data
-      .filter(isDestinationPlace)
+    const destinationMatches = data.filter(isDestinationPlace);
+    const searchResults =
+      destinationMatches.length > 0
+        ? destinationMatches
+        : data.filter((place) => Boolean(place.display_name)).slice(0, 8);
+    const places = searchResults
       .map((place) => {
         const name = buildName(place);
         const description = buildDescription(place);

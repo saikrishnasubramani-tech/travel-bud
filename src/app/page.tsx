@@ -262,9 +262,15 @@ export default function Home() {
       uniquePlaces.set(`${place.name}-${place.description}`, place);
     });
 
-    return Array.from(uniquePlaces.values()).sort((first, second) =>
+    const suggestions = Array.from(uniquePlaces.values()).sort((first, second) =>
       first.name.localeCompare(second.name),
     );
+
+    if (suggestions.length === 0 && destination.trim().length >= 2) {
+      return [typedPlaceSuggestion(destination, "destination")];
+    }
+
+    return suggestions;
   }, [destination, onlinePlaces]);
 
   const filteredFromPlaces = useMemo<PlaceSuggestion[]>(() => {
@@ -288,9 +294,15 @@ export default function Home() {
       uniquePlaces.set(`${place.name}-${place.description}`, place);
     });
 
-    return Array.from(uniquePlaces.values()).sort((first, second) =>
+    const suggestions = Array.from(uniquePlaces.values()).sort((first, second) =>
       first.name.localeCompare(second.name),
     );
+
+    if (suggestions.length === 0 && fromPlace.trim().length >= 2) {
+      return [typedPlaceSuggestion(fromPlace, "starting place")];
+    }
+
+    return suggestions;
   }, [fromPlace, onlineFromPlaces]);
 
   function toggleInterest(interest: string) {
@@ -1814,6 +1826,16 @@ function destinationToSuggestion(place: Destination): PlaceSuggestion {
     id: `${place.city}-${place.country}`,
     name: `${place.city}, ${place.country}`,
     description: place.highlight,
+  };
+}
+
+function typedPlaceSuggestion(value: string, fieldLabel: string): PlaceSuggestion {
+  const cleanValue = value.trim();
+
+  return {
+    id: `typed-${fieldLabel}-${cleanValue.toLowerCase()}`,
+    name: cleanValue,
+    description: `Use "${cleanValue}" as the ${fieldLabel}. Travel Bud will also consider nearby places while planning.`,
   };
 }
 
